@@ -61,6 +61,8 @@ class HealthDataFetcher: DefaultInitializable, Module, EnvironmentAccessible {
         ) { statistics, _ in
             if let quantity = statistics.sumQuantity() {
                 dailyData.append(quantity.doubleValue(for: unit))
+            } else if let quantity = statistics.averageQuantity() {
+                dailyData.append(quantity.doubleValue(for: unit))
             } else {
                 dailyData.append(0)
             }
@@ -119,42 +121,11 @@ class HealthDataFetcher: DefaultInitializable, Module, EnvironmentAccessible {
 
     /// TODO: docs
     func fetchLastTwoWeeksBloodGlucose() async throws -> [Double] {
-        guard let glucoseType = HKObjectType.quantityType(forIdentifier: .bloodGlucose) else {
-            print("Blood glucose data type is not available.")
-            throw HealthDataFetcherError.invalidObjectType
-        }
-
-        let predicate = createLastTwoWeeksPredicate()
-
-        let quantityLastTwoWeeks = HKSamplePredicate.quantitySample(
-            type: glucoseType,
-            predicate: predicate
+        try await fetchLastTwoWeeksQuantityData(
+            for: .bloodGlucose,
+            unit: bloodGlucoseMgDlUnit,
+            options: [.discreteAverage]
         )
-
-        let query = HKStatisticsCollectionQueryDescriptor(
-            predicate: quantityLastTwoWeeks,
-            options: .discreteAverage,
-            anchorDate: Date.startOfDay(),
-            intervalComponents: DateComponents(day: 1)
-        )
-
-        let statisticsCollection = try await query.result(for: healthStore)
-
-        var dailyData = [Double]()
-
-        statisticsCollection.enumerateStatistics(
-            from: Date().twoWeeksAgoStartOfDay(),
-            to: Date.startOfDay()
-        ) { statistics, _ in
-            if let quantity = statistics.averageQuantity() {
-                let value = quantity.doubleValue(for: bloodGlucoseMgDlUnit)
-                dailyData.append(value)
-            } else {
-                dailyData.append(0)
-            }
-        }
-
-        return dailyData
     }
 
     
