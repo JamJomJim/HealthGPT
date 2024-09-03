@@ -114,6 +114,61 @@ class HealthDataFetcher: DefaultInitializable, Module, EnvironmentAccessible {
         )
     }
 
+    /// TODO: docs
+    func fetchLastTwoWeeksBloodGlucose() async throws -> [Double] {
+            guard let glucoseType = HKObjectType.quantityType(forIdentifier: .bloodGlucose) else {
+                print("Blood glucose data type is not available.")
+                throw HealthDataFetcherError.invalidObjectType
+            }
+
+            let predicate = createLastTwoWeeksPredicate()
+
+            let quantityLastTwoWeeks = HKSamplePredicate.quantitySample(
+                type: glucoseType,
+                predicate: predicate
+            )
+
+            let query = HKStatisticsCollectionQueryDescriptor(
+                predicate: quantityLastTwoWeeks,
+                options: .discreteAverage,
+                anchorDate: Date.startOfDay(),
+                intervalComponents: DateComponents(day: 1)
+            )
+
+            let statisticsCollection = try await query.result(for: healthStore)
+
+            var dailyData = [Double]()
+            print("Blood Glucose Data (Daily Averages):")
+
+            let glucoseUnit = HKUnit.moleUnit(with: .milli, molarMass: HKUnitMolarMassBloodGlucose)
+
+            statisticsCollection.enumerateStatistics(
+                from: Date().twoWeeksAgoStartOfDay(),
+                to: Date.startOfDay()
+            ) { statistics, _ in
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd"
+                let dateString = dateFormatter.string(from: statistics.startDate)
+                let bloodGlucoseMgDlUnit = HKUnit.gramUnit(with: .milli).unitDivided(by: HKUnit.literUnit(with: .deci))
+                let bloodGlucoseMMolLUnit = HKUnit.moleUnit(with: .milli, molarMass: HKUnitMolarMassBloodGlucose).unitDivided(by: HKUnit.liter())
+
+
+                if let quantity = statistics.averageQuantity() {
+                    print(quantity)
+                    let value = quantity.doubleValue(for: bloodGlucoseMgDlUnit)
+                    print("Date: \(dateString), Average Glucose: \(value) mmol/L")
+                    dailyData.append(value)
+                } else {
+                    print("Date: \(dateString), No data available")
+                    dailyData.append(0)
+                }
+            }
+
+            print("Total days with data: \(dailyData.filter { $0 > 0 }.count)")
+            return dailyData
+        }
+
+    
     /// Fetches the user's heart rate data for the last two weeks.
     ///
     /// - Returns: An array of `Double` values representing daily average heart rates.

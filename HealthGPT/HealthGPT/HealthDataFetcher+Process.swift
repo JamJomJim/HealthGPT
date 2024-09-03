@@ -36,12 +36,14 @@ extension HealthDataFetcher {
         async let caloriesBurned = fetchLastTwoWeeksActiveEnergy()
         async let exerciseTime = fetchLastTwoWeeksExerciseTime()
         async let bodyMass = fetchLastTwoWeeksBodyWeight()
+        async let bloodGlucose = fetchLastTwoWeeksBloodGlucose()
 
         let fetchedStepCounts = try? await stepCounts
         let fetchedSleepHours = try? await sleepHours
         let fetchedCaloriesBurned = try? await caloriesBurned
         let fetchedExerciseTime = try? await exerciseTime
         let fetchedBodyMass = try? await bodyMass
+        let fetchedBloodGlucose = try? await bloodGlucose
 
         for day in 0...13 {
             healthData[day].steps = fetchedStepCounts?[day]
@@ -49,6 +51,7 @@ extension HealthDataFetcher {
             healthData[day].activeEnergy = fetchedCaloriesBurned?[day]
             healthData[day].exerciseMinutes = fetchedExerciseTime?[day]
             healthData[day].bodyWeight = fetchedBodyMass?[day]
+            healthData[day].bloodGlucose = fetchedBloodGlucose?[day]
         }
 
         return healthData

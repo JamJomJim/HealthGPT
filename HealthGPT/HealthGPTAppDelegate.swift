@@ -44,7 +44,8 @@ class HealthGPTAppDelegate: SpeziAppDelegate {
                     HKQuantityType(.appleExerciseTime),
                     HKQuantityType(.bodyMass),
                     HKQuantityType(.heartRate),
-                    HKCategoryType(.sleepAnalysis)
+                    HKCategoryType(.sleepAnalysis),
+                    HKQuantityType(.bloodGlucose)
                 ],
                 deliverySetting: .manual()
             )
